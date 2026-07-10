@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
@@ -21,3 +22,90 @@ jobs:
       - run: npm publish --access=public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Sync extension registry in finch-releases
+      - name: Sync to finch-releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.FINCH_RELEASES_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_ID=$(node -p "require('./package.json').finch?.id || require('./package.json').name.split('/').pop()")
+          PKG_DESC=$(node -p "require('./package.json').description || ''")
+          PKG_CATEGORIES=$(node -p "JSON.stringify(require('./package.json').finch?.categories || [])")
+
+          echo "Package: $PKG_NAME  ID: $PKG_ID  Version: $VERSION"
+
+          # Clone finch-releases
+          gh repo clone finchtoys/finch-releases /tmp/finch-releases -- --depth=1
+          cd /tmp/finch-releases
+
+          # Check current state
+          EXISTING=$(node -p "
+            const list = require('./community/mini-tools.json');
+            const item = list.find(e => e.npm === '${PKG_NAME}');
+            item ? JSON.stringify(item) : null
+          " 2>/dev/null || echo "null")
+
+          BRANCH="auto/sync-${PKG_ID}-v${VERSION}"
+
+          if [ "$EXISTING" = "null" ]; then
+            # Not registered → create registration PR
+            echo "Not registered, creating registration PR..."
+            git checkout -b "$BRANCH"
+
+            # Add entry to mini-tools.json
+            node -e "
+              const fs = require('fs');
+              const list = JSON.parse(fs.readFileSync('community/mini-tools.json', 'utf8'));
+              const entry = {
+                id: '${PKG_ID}',
+                name: '${PKG_ID}',
+                author: 'joehe71',
+                description: $(node -p "JSON.stringify('${PKG_DESC}')"),
+                repo: 'joehe71/${PKG_ID}',
+                npm: '${PKG_NAME}',
+                version: '${VERSION}',
+                extensionType: 'community',
+                categories: ${PKG_CATEGORIES}
+              };
+              list.push(entry);
+              list.sort((a, b) => a.id.localeCompare(b.id));
+              fs.writeFileSync('community/mini-tools.json', JSON.stringify(list, null, 2) + '\n');
+            "
+
+            git add community/mini-tools.json
+            git commit -m "chore: register ${PKG_ID} v${VERSION} in community catalog"
+            git push origin "$BRANCH"
+            gh pr create \
+              --repo finchtoys/finch-releases \
+              --head "$BRANCH" \
+              --title "chore: register ${PKG_ID} v${VERSION}" \
+              --body "Auto-registered \`@joehe71/${PKG_ID}\` v${VERSION} in community mini-tools catalog."
+          else
+            # Check version
+            OLD_VER=$(echo "$EXISTING" | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version")
+            if [ "$OLD_VER" = "$VERSION" ]; then
+              echo "Already registered at v${VERSION}, nothing to do."
+            else
+              echo "Registered at v${OLD_VER}, updating to v${VERSION}..."
+              git checkout -b "$BRANCH"
+
+              node -e "
+                const fs = require('fs');
+                const list = JSON.parse(fs.readFileSync('community/mini-tools.json', 'utf8'));
+                const item = list.find(e => e.npm === '${PKG_NAME}');
+                if (item) item.version = '${VERSION}';
+                fs.writeFileSync('community/mini-tools.json', JSON.stringify(list, null, 2) + '\n');
+              "
+
+              git add community/mini-tools.json
+              git commit -m "chore: update ${PKG_ID} to v${VERSION}"
+              git push origin "$BRANCH"
+              gh pr create \
+                --repo finchtoys/finch-releases \
+                --head "$BRANCH" \
+                --title "chore: update ${PKG_ID} v${OLD_VER} → v${VERSION}" \
+                --body "Auto-upgraded \`@joehe71/${PKG_ID}\` from v${OLD_VER} to v${VERSION} in community mini-tools catalog."
+            fi
+          fi
