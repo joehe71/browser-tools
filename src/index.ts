@@ -706,6 +706,30 @@ const tools: Array<{
     },
   },
 
+  // ── browser_connect ──────────────────────────────────────────────────
+  {
+    name: 'browser_connect',
+    title: 'Browser: Connect',
+    description: 'Connect to an existing browser via Chrome DevTools Protocol (CDP). First launch Chrome with --remote-debugging-port, then use this tool to connect agent-browser to it. This lets you see all automation operations in a visible browser window.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        port: {
+          type: 'number',
+          description: 'The CDP debugging port to connect to (default: 9222).',
+          default: 9222,
+        },
+      },
+    },
+    risk: 'medium',
+    async execute(input) {
+      requireAgentBrowser();
+      const port = input.port ?? 9222;
+      const out = await run(['connect', String(port)]);
+      return { content: [{ type: 'text', text: out || `Connected to browser on port ${port}` }] };
+    },
+  },
+
   // ── browser_dblclick ──────────────────────────────────────────────────
   {
     name: 'browser_dblclick',

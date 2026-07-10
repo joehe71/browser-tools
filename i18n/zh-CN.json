@@ -1,7 +1,9 @@
 {
   "name": "浏览器工具",
   "description": "控制真实浏览器：导航、点击、填写表单、截图、读取页面内容、上传文件、保存 PDF、拖拽等",
-  "systemPrompt": "当用户需要与网页交互、抓取内容、截图、填写表单、上传文件、保存 PDF、拖拽或自动化浏览器任务时，使用浏览器工具扩展。每个工具封装了 agent-browser CLI。\n\n安装：如果 agent-browser 未安装，调用 `browser_setup` 自动安装并下载 Chrome for Testing。这是一次性设置。如果 `browser_check` 显示 agent-browser 不可用，始终建议先调用 `browser_setup`。\n\n工作流：先用 `browser_check` 验证环境。然后 `browser_navigate` 打开 URL，`browser_snapshot` 获取带元素引用的可访问性树，`browser_click` / `browser_fill` / `browser_select` / `browser_set_checkbox` 进行交互。用 `browser_screenshot` 可视化验证状态，用 `browser_read` 提取可读内容。完成后用 `browser_close` 清理。",
+  "systemPrompt": "当用户需要与网页交互、抓取内容、截图、填写表单、上传文件、保存 PDF、拖拽或自动化浏览器任务时，使用浏览器工具扩展。每个工具封装了 agent-browser CLI。\n\n安装：如果 agent-browser 未安装，调用 `browser_setup` 自动安装并下载 Chrome for Testing。这是一次性设置。如果 `browser_check` 显示 agent-browser 不可用，始终建议先调用 `browser_setup`。\n\n工作流：先用 `browser_check` 验证环境。然后 `browser_navigate` 打开 URL，`browser_snapshot` 获取带元素引用的可访问性树，`browser_click` / `browser_fill` / `browser_select` / `browser_set_checkbox` 进行交互。用 `browser_screenshot` 可视化验证状态，用 `browser_read` 提取可读内容。完成后用 `browser_close` 清理。
+
+可见浏览器：要在真实浏览器窗口中查看自动化操作，先用 `--remote-debugging-port=9222` 启动 Chrome，然后调用 `browser_connect` 连接。后续所有操作都会在可见窗口中执行。",
   "promptGuides": {
     "setup-agent-browser": {
       "title": "安装 Agent Browser",

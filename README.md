@@ -12,7 +12,7 @@ npm install -g agent-browser
 agent-browser install   # Downloads Chrome for Testing (first time only)
 ```
 
-## Tools (25)
+## Tools (27)
 
 | Tool | Description | Risk |
 |---|---|---|
@@ -41,6 +41,7 @@ agent-browser install   # Downloads Chrome for Testing (first time only)
 | `browser_pdf` | Save the current page as a PDF | low |
 | `browser_close` | Close the browser session | medium |
 | `browser_check` | Check agent-browser installation status | low |
+| `browser_connect` | Connect to an existing browser via CDP | medium |
 
 ### `browser_navigate` options
 

@@ -12,7 +12,7 @@ npm install -g agent-browser
 agent-browser install   # 首次运行下载 Chrome for Testing
 ```
 
-## 工具（25 个）
+## 工具（27 个）
 
 | 工具 | 说明 | 风险 |
 |---|---|---|
@@ -41,6 +41,7 @@ agent-browser install   # 首次运行下载 Chrome for Testing
 | `browser_pdf` | 将当前页面保存为 PDF | low |
 | `browser_close` | 关闭浏览器会话 | medium |
 | `browser_check` | 检查 agent-browser 安装状态 | low |
+| `browser_connect` | 通过 CDP 连接到已打开的浏览器 | medium |
 
 ### `browser_navigate` 选项
 
