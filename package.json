@@ -1,7 +1,7 @@
 {
   "name": "@joehe71/browser-tools",
-  "version": "0.1.0",
-  "description": "Browser automation tools for Finch — navigate, click, fill forms, take screenshots, read page content, upload files, save PDFs, drag and drop, and more. Powered by agent-browser (Vercel Labs).",
+  "version": "0.2.0",
+  "description": "Browser automation tools for Finch — navigate, click, fill forms, take screenshots, debug, and more. Powered by Chrome DevTools MCP (Google).",
   "author": {
     "name": "joehe71"
   },
@@ -20,23 +20,23 @@
     "manifestVersion": 1,
     "id": "browser-tools",
     "name": "Browser Tools",
-    "description": "Control a real browser from Finch: navigate, click, fill, screenshot, read page content, and more — powered by agent-browser (Vercel Labs).",
-    "systemPrompt": "When the user needs to interact with a web page, scrape content, take screenshots, fill forms, upload files, save PDFs, drag and drop, or automate browser tasks, use the Browser Tools extension. Each tool wraps the agent-browser CLI.\n\nSetup: If agent-browser is not installed, call `browser_setup` to install it and download Chrome for Testing automatically. This is a one-time setup. If `browser_check` shows agent-browser is not available, always suggest calling `browser_setup` first.\n\nWorkflow: Start with `browser_check` to verify the environment. Then `browser_navigate` to open a URL, `browser_snapshot` to get the accessibility tree with element refs, and `browser_click` / `browser_fill` / `browser_select` / `browser_set_checkbox` to interact. Use `browser_screenshot` to visually verify state and `browser_read` to extract readable content. Clean up with `browser_close` when done.\n\nVisible browser: If the user wants to see the agent's browser operations in real time, first detect the platform and check if Chrome is installed: macOS check `/Applications/Google Chrome.app`, Linux check `which google-chrome`, Windows check `where chrome`. If Chrome is not found, tell the user to install it first. If Chrome is available, launch it yourself using Bash: macOS: `open -a \"Google Chrome\" --args --remote-debugging-port=9222`, Linux: `google-chrome --remote-debugging-port=9222`, Windows: `\"C:/Program Files/Google/Chrome/Application/chrome.exe\" --remote-debugging-port=9222`. Wait a few seconds for Chrome to start, then call `browser_connect port=9222` to connect. All subsequent operations will happen in the visible window. Always prefer this when the user asks to 'watch', 'see', or 'visually verify' the automation. Do NOT ask the user to launch Chrome manually.",
+    "description": "Control a real browser: navigate, click, fill forms, take screenshots, debug, and more — powered by Chrome DevTools MCP (Google).",
+    "systemPrompt": "When the user needs to interact with a web page, scrape content, take screenshots, fill forms, debug, or automate browser tasks, use the Browser Tools extension. Each tool wraps the chrome-devtools CLI (Google Chrome DevTools MCP).\n\nSetup: If chrome-devtools-mcp is not installed, call `browser_setup` to install it automatically. This is a one-time setup. If `browser_check` shows it is not available, always suggest calling `browser_setup` first.\n\nElement selection: Chrome DevTools MCP uses UIDs (not CSS selectors) to identify elements. Always call `browser_snapshot` first to get element UIDs, then pass UIDs to `browser_click`, `browser_fill`, `browser_hover`, etc.\n\nWorkflow: Start with `browser_check` to verify the environment. Then `browser_navigate` to open a URL, `browser_snapshot` to get element UIDs, and `browser_click` / `browser_fill` to interact. Use `browser_screenshot` to visually verify state. Use `browser_console` and `browser_network` to debug. Clean up with `browser_close` when done.\n\nVisible browser: Chrome DevTools MCP starts a visible browser window by default. All operations happen in real time in the browser window. No extra configuration needed. When the user asks to 'watch', 'see', or 'visually verify' the automation, this happens automatically.",
     "toolMeta": {
       "name": "Browser"
     },
     "promptGuides": [
       {
-        "id": "setup-agent-browser",
-        "title": "Set up Agent Browser",
-        "description": "Check whether agent-browser is installed and install it if needed.",
-        "prompt": "Check if agent-browser is installed using /browser_check. If not installed, call /browser_setup to install the agent-browser CLI and download Chrome for browser automation."
+        "id": "setup",
+        "title": "Set up Browser Tools",
+        "description": "Install chrome-devtools-mcp if needed.",
+        "prompt": "Check if chrome-devtools-mcp is installed using /browser_check. If not installed, call /browser_setup to install it."
       },
       {
         "id": "scrape-webpage",
         "title": "Scrape a webpage",
         "description": "Navigate to a URL and extract its readable content.",
-        "prompt": "/browser_navigate open https://example.com and /browser_read get the page content"
+        "prompt": "/browser_navigate to https://example.com, then /browser_snapshot to get the page structure, then /browser_read to extract content."
       }
     ],
     "main": "dist/index.js",

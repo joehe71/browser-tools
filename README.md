@@ -1,95 +1,76 @@
 # Browser Tools
 
-Control a real browser from Finch — navigate, click, fill forms, take screenshots, read page content, and more. Powered by [agent-browser](https://github.com/vercel-labs/agent-browser) (Vercel Labs).
+Control a real browser from Finch — navigate, click, fill forms, take screenshots, read page content, debug, and more. Powered by [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) (Google).
 
 ## Requirements
 
-- **Node.js 18+** (for the agent-browser CLI)
-- **agent-browser CLI** installed globally
+- **Node.js 18+**
+- **chrome-devtools-mcp** installed globally
 
 ```bash
-npm install -g agent-browser
-agent-browser install   # Downloads Chrome for Testing (first time only)
+npm install -g chrome-devtools-mcp
 ```
 
-## Tools (27)
+Or use the `/browser_setup` tool to install automatically.
+
+## Tools (22)
 
 | Tool | Description | Risk |
 |---|---|---|
-| `browser_navigate` | Open a URL in the browser | medium |
-| `browser_read` | Read page content as agent-friendly text | low |
-| `browser_snapshot` | Get accessibility tree with element refs | low |
+| `browser_navigate` | Navigate to a URL or open a new page | medium |
+| `browser_new_page` | Open a new browser tab | medium |
+| `browser_snapshot` | Get accessibility tree with element UIDs | low |
 | `browser_screenshot` | Take a screenshot of the current page | low |
-| `browser_click` | Click an element by CSS selector or snapshot ref | medium |
-| `browser_dblclick` | Double-click an element | medium |
-| `browser_fill` | Clear and fill a form field | medium |
-| `browser_type` | Type text with real keystrokes (current focus) | medium |
-| `browser_focus` | Focus an element before typing | low |
-| `browser_press` | Press a keyboard key (Enter, Tab, etc.) | medium |
-| `browser_select` | Select an option from a dropdown | medium |
-| `browser_set_checkbox` | Check or uncheck a checkbox/radio | medium |
-| `browser_scroll` | Scroll the page or scroll element into view | low |
-| `browser_scroll_into_view` | Scroll a specific element into view | low |
-| `browser_hover` | Hover over an element | low |
+| `browser_click` | Click an element by UID | medium |
+| `browser_fill` | Clear and fill a form field by UID | medium |
+| `browser_type` | Type text with real keystrokes | medium |
+| `browser_press` | Press a keyboard key | medium |
+| `browser_hover` | Hover over an element by UID | low |
 | `browser_run_js` | Execute JavaScript in page context | high |
-| `browser_get_info` | Get page title and/or URL | low |
-| `browser_get` | Get element text/html/value/attribute/count/box/styles | low |
-| `browser_find` | Find element by selector/role/text and optionally act | medium |
-| `browser_wait` | Wait for a page condition (selector, text, URL, JS) | low |
+| `browser_get_info` | List all open pages | low |
+| `browser_get` | Get element info by UID | low |
+| `browser_find` | Get verbose snapshot to find elements | low |
+| `browser_wait` | Wait for a condition (selector, text, url) | low |
 | `browser_upload` | Upload files to a file input | medium |
-| `browser_drag` | Drag and drop an element | medium |
-| `browser_pdf` | Save the current page as a PDF | low |
-| `browser_close` | Close the browser session | medium |
-| `browser_check` | Check agent-browser installation status | low |
-| `browser_connect` | Connect to an existing browser via CDP | medium |
+| `browser_drag` | Drag and drop elements | medium |
+| `browser_set_checkbox` | Toggle checkbox/radio | medium |
+| `browser_scroll` | Scroll the page | low |
+| `browser_console` | List console messages | low |
+| `browser_network` | List network requests | low |
+| `browser_close` | Stop the browser daemon | medium |
+| `browser_check` | Check installation status | low |
+| `browser_setup` | Install chrome-devtools-mcp | medium |
 
-### `browser_navigate` options
+## Element Selection
 
-In addition to `url`, you can pass launch options:
-
-- `headless` — run without a visible window
-- `windowSize` — e.g. `"1280x720"`
-- `userAgent` — custom user agent
-- `proxy` — e.g. `"http://localhost:8080"`
-- `profile` — Chrome profile name to reuse cookies/logins
-- `noBlock` — disable the default ad/tracker blocker
-- `block` — enable strict blocking
-
-### `browser_screenshot` options
-
-- `fullPage` — capture full scrollable page
-- `format` — `"png"` (default) or `"jpeg"`
-- `quality` — JPEG quality 0-100
-- `annotate` — annotate with numbered element labels
+Chrome DevTools MCP uses **UIDs** (not CSS selectors) to identify elements. Use `browser_snapshot` first to get element UIDs, then pass them to `browser_click`, `browser_fill`, etc.
 
 ## Workflow
 
-A typical browser automation flow:
-
-1. **`browser_check`** — Verify agent-browser is installed
-2. **`browser_navigate`** — Open the target URL
-3. **`browser_snapshot`** — Get the page structure with element refs
-4. **`browser_fill` / `browser_click`** — Interact with the page using refs
+1. **`browser_check`** / **`browser_setup`** — Verify/install chrome-devtools-mcp
+2. **`browser_navigate`** — Open the target URL (daemon starts automatically)
+3. **`browser_snapshot`** — Get element UIDs
+4. **`browser_click`** / **`browser_fill`** — Interact using UIDs
 5. **`browser_screenshot`** — Visually verify the state
-6. **`browser_read`** — Extract readable content
+6. **`browser_console`** / **`browser_network`** — Debug if needed
 7. **`browser_close`** — Clean up when done
 
 ## Visible Browser
 
-To see the agent's browser operations in real time, use `browser_connect`. The agent will:
+Chrome DevTools MCP starts a visible browser window by default. All operations happen in real time in the browser window. No extra configuration needed.
 
-1. Detect the platform and check if Chrome is installed:
-   - macOS: `/Applications/Google Chrome.app`
-   - Linux: `which google-chrome`
-   - Windows: `where chrome`
-2. Launch Chrome with `--remote-debugging-port=9222`
-3. Call `browser_connect port=9222` to connect
+## Debugging
 
-All subsequent operations will happen in the visible browser window.
+Chrome DevTools MCP provides debugging capabilities:
+
+- **`browser_console`** — View console messages with source-mapped stack traces
+- **`browser_network`** — Analyze network requests
+- **`browser_run_js`** — Execute arbitrary JavaScript
+- **`browser_snapshot`** — Get the full accessibility tree
 
 ## Privacy
 
-The mini tool shells out to the `agent-browser` CLI on your machine. No data leaves your machine beyond what agent-browser itself does when visiting URLs you specify.
+The mini tool shells out to the `chrome-devtools` CLI on your machine. No data leaves your machine beyond what the browser itself does when visiting URLs you specify.
 
 ## License
 
