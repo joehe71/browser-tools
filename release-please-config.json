@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "changelog-path": "CHANGELOG.md"
+    }
+  },
+  "include-v-in-tag": true,
+  "commit-search-depth": 300,
+  "release-search-depth": 200,
+  "pull-request-title-pattern": "chore: release v${version}"
+}
