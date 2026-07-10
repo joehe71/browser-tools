@@ -1,12 +1,9 @@
 name: Publish to npm
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to publish (e.g. v0.3.0)'
-        required: true
-        type: string
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   publish:
@@ -16,8 +13,6 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -33,8 +28,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.FINCH_RELEASES_TOKEN }}
         run: |
-          VERSION="${{ inputs.tag }}"
-          VERSION="${VERSION#v}"
+          VERSION="${GITHUB_REF_NAME#v}"
           PKG_NAME=$(node -p "require('./package.json').name")
           PKG_ID=$(node -p "require('./package.json').finch?.id || require('./package.json').name.split('/').pop()")
           PKG_DESC=$(node -p "require('./package.json').description || ''")
