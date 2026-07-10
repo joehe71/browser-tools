@@ -53,6 +53,13 @@ function tempScreenshotPath(): string {
   return path;
 }
 
+/** Create a temp file path for PDF output. */
+function tempPdfPath(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'agent-browser-'));
+  const path = join(dir, 'page.pdf');
+  return path;
+}
+
 /** Read a local file as base64 data URI. */
 function fileToBase64(filePath: string): { data: string; mimeType: string } {
   const buf = readFileSync(filePath);
@@ -92,12 +99,18 @@ const tools: Array<{
   {
     name: 'browser_navigate',
     title: 'Browser: Navigate',
-    description: 'Open a URL in the browser. Launches the browser if not already running. Use this to load a webpage before reading, screenshotting, or interacting with it.',
+    description: 'Open a URL in the browser. Launches the browser if not already running. Use this to load a webpage before reading, screenshotting, or interacting with it. Supports headless mode, viewport size, custom user agent, proxy, and ad-blocker settings.',
     inputSchema: {
       type: 'object',
       properties: {
         url: { type: 'string', description: 'The full URL to navigate to (e.g. https://example.com).' },
         profile: { type: 'string', description: 'Optional Chrome profile name to reuse login state (e.g. "Default", "Work"). Only used on first launch.' },
+        headless: { type: 'boolean', description: 'Run in headless mode (no visible window).' },
+        windowSize: { type: 'string', description: 'Browser window size, e.g. "1280x720".' },
+        userAgent: { type: 'string', description: 'Custom user agent string.' },
+        proxy: { type: 'string', description: 'Proxy server, e.g. "http://localhost:8080".' },
+        noBlock: { type: 'boolean', description: 'Disable the default ad/tracker blocker.' },
+        block: { type: 'boolean', description: 'Enable strict blocking of ads/trackers.' },
       },
       required: ['url'],
     },
@@ -105,8 +118,15 @@ const tools: Array<{
     async execute(input) {
       requireAgentBrowser();
       const url = String(input.url ?? '');
-      const profile = input.profile ? String(input.profile) : undefined;
-      const args = profile ? ['--profile', profile, 'open', url] : ['open', url];
+      const args: string[] = [];
+      if (input.profile) args.push('--profile', String(input.profile));
+      if (input.headless) args.push('--headless');
+      if (input.windowSize) args.push('--window-size', String(input.windowSize));
+      if (input.userAgent) args.push('--user-agent', String(input.userAgent));
+      if (input.proxy) args.push('--proxy', String(input.proxy));
+      if (input.noBlock) args.push('--no-block');
+      if (input.block) args.push('--block');
+      args.push('open', url);
       const out = await run(args);
       return { content: [{ type: 'text', text: out || `Navigated to ${url}` }] };
     },
@@ -174,6 +194,7 @@ const tools: Array<{
         fullPage: { type: 'boolean', description: 'Capture full page (scrollable area) instead of viewport only.' },
         format: { type: 'string', description: 'Image format: "png" (default) or "jpeg".', enum: ['png', 'jpeg'] },
         quality: { type: 'number', description: 'JPEG quality 0-100 (default 80). Only applies to jpeg format.' },
+        annotate: { type: 'boolean', description: 'Annotate screenshot with numbered element labels from the accessibility tree.' },
       },
     },
     risk: 'low',
@@ -185,6 +206,7 @@ const tools: Array<{
         if (input.fullPage) args.push('--full');
         if (input.format) args.push('--screenshot-format', String(input.format));
         if (input.quality !== undefined) args.push('--screenshot-quality', String(input.quality));
+        if (input.annotate) args.push('--annotate');
 
         await run(args, 60_000);
         const image = fileToBase64(filePath);
@@ -494,6 +516,256 @@ const tools: Array<{
       } catch {
         return { content: [{ type: 'text', text: '⚠️ agent-browser is installed but version info could not be retrieved.' }] };
       }
+    },
+  },
+
+  // ── browser_dblclick ──────────────────────────────────────────────────
+  {
+    name: 'browser_dblclick',
+    title: 'Browser: Double Click',
+    description: 'Double-click an element on the page. Use a CSS selector (e.g. "#row-1") or a snapshot ref (e.g. "@e5"). Useful for opening items, selecting text, or map interactions.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: 'CSS selector or snapshot ref (e.g. "@e5").' },
+      },
+      required: ['selector'],
+    },
+    risk: 'medium',
+    async execute(input) {
+      requireAgentBrowser();
+      const out = await run(['dblclick', String(input.selector)]);
+      return { content: [{ type: 'text', text: out || `Double-clicked "${input.selector}"` }] };
+    },
+  },
+
+  // ── browser_focus ─────────────────────────────────────────────────────
+  {
+    name: 'browser_focus',
+    title: 'Browser: Focus',
+    description: 'Focus an element on the page. Use before typing with browser_type (keyboard type), or to trigger focus-based UI. Accepts a CSS selector or snapshot ref.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: 'CSS selector or snapshot ref (e.g. "@e3").' },
+      },
+      required: ['selector'],
+    },
+    risk: 'low',
+    async execute(input) {
+      requireAgentBrowser();
+      const out = await run(['focus', String(input.selector)]);
+      return { content: [{ type: 'text', text: out || `Focused "${input.selector}"` }] };
+    },
+  },
+
+  // ── browser_set_checkbox ──────────────────────────────────────────────
+  {
+    name: 'browser_set_checkbox',
+    title: 'Browser: Set Checkbox',
+    description: 'Check or uncheck a checkbox or radio element. Use a CSS selector or snapshot ref.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: 'CSS selector or snapshot ref for the checkbox element.' },
+        checked: { type: 'boolean', description: 'True to check, false to uncheck.' },
+      },
+      required: ['selector', 'checked'],
+    },
+    risk: 'medium',
+    async execute(input) {
+      requireAgentBrowser();
+      const checked = Boolean(input.checked);
+      const cmd = checked ? 'check' : 'uncheck';
+      const out = await run([cmd, String(input.selector)]);
+      return { content: [{ type: 'text', text: out || `${checked ? 'Checked' : 'Unchecked'} "${input.selector}"` }] };
+    },
+  },
+
+  // ── browser_get ───────────────────────────────────────────────────────
+  {
+    name: 'browser_get',
+    title: 'Browser: Get Element Info',
+    description: 'Get information about a specific element: text content, innerHTML, input value, attribute, matching count, bounding box, or computed styles. Safer than run_js for element data extraction.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          description: 'What to get about the element.',
+          enum: ['text', 'html', 'value', 'attr', 'count', 'box', 'styles'],
+          default: 'text',
+        },
+        selector: { type: 'string', description: 'CSS selector or snapshot ref for the target element.' },
+        attribute: { type: 'string', description: 'Attribute name to read when type is "attr" (e.g. "href", "src").' },
+      },
+      required: ['type', 'selector'],
+    },
+    risk: 'low',
+    async execute(input) {
+      requireAgentBrowser();
+      const type = String(input.type ?? 'text');
+      const selector = String(input.selector);
+      const args: string[] = ['get', type];
+      if (type === 'attr') {
+        if (!input.attribute) {
+          return error('When type is "attr", the "attribute" field is required.');
+        }
+        args.push(selector, String(input.attribute));
+      } else {
+        args.push(selector);
+      }
+      const out = await run(args);
+      return { content: [{ type: 'text', text: out }] };
+    },
+  },
+
+  // ── browser_find ──────────────────────────────────────────────────────
+  {
+    name: 'browser_find',
+    title: 'Browser: Find Element',
+    description: 'Find an element by selector, role/name, or text. Optionally perform an action (click, fill, type, select, etc.) on the found element. More robust than CSS selectors on dynamic or accessible sites.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        by: {
+          type: 'string',
+          description: 'How to find the element.',
+          enum: ['selector', 'role', 'text', 'all'],
+          default: 'selector',
+        },
+        selector: { type: 'string', description: 'CSS selector or snapshot ref when by="selector" or by="all".' },
+        role: { type: 'string', description: 'ARIA role when by="role", e.g. "button", "link", "textbox".' },
+        name: { type: 'string', description: 'Accessible name to match when by="role".' },
+        text: { type: 'string', description: 'Text substring when by="text".' },
+        action: {
+          type: 'string',
+          description: 'Optional action to perform on the found element.',
+          enum: ['click', 'dblclick', 'fill', 'type', 'select', 'check', 'uncheck', 'hover'],
+        },
+        value: { type: 'string', description: 'Value for fill/type/select actions.' },
+      },
+      required: ['by'],
+    },
+    risk: 'medium',
+    async execute(input) {
+      requireAgentBrowser();
+      const by = String(input.by);
+      const args: string[] = ['find'];
+
+      if (by === 'role') {
+        args.push('role', String(input.role));
+        if (input.name) args.push('--name', String(input.name));
+      } else if (by === 'text') {
+        args.push('text', String(input.text));
+      } else if (by === 'all') {
+        args.push('all', String(input.selector));
+      } else {
+        args.push(String(input.selector));
+      }
+
+      if (input.action) {
+        const action = String(input.action);
+        args.push(action);
+        if (['fill', 'type', 'select'].includes(action) && input.value !== undefined) {
+          args.push(String(input.value));
+        }
+      }
+
+      const out = await run(args);
+      return { content: [{ type: 'text', text: out }] };
+    },
+  },
+
+  // ── browser_scroll_into_view ──────────────────────────────────────────
+  {
+    name: 'browser_scroll_into_view',
+    title: 'Browser: Scroll Into View',
+    description: 'Scroll a specific element into view. More precise than browser_scroll for targeting a specific element. Accepts a CSS selector or snapshot ref.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: 'CSS selector or snapshot ref for the element to scroll into view.' },
+      },
+      required: ['selector'],
+    },
+    risk: 'low',
+    async execute(input) {
+      requireAgentBrowser();
+      const out = await run(['scrollintoview', String(input.selector)]);
+      return { content: [{ type: 'text', text: out || `Scrolled "${input.selector}" into view` }] };
+    },
+  },
+
+  // ── browser_pdf ───────────────────────────────────────────────────────
+  {
+    name: 'browser_pdf',
+    title: 'Browser: Save PDF',
+    description: 'Save the current page as a PDF. Either provide an output path or use a temporary file. Returns the path to the saved PDF.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Output file path. If omitted, a temporary path is used.' },
+      },
+    },
+    risk: 'low',
+    async execute(input) {
+      requireAgentBrowser();
+      const filePath = input.path ? String(input.path) : tempPdfPath();
+      const out = await run(['pdf', filePath]);
+      return { content: [{ type: 'text', text: out || `PDF saved to ${filePath}` }] };
+    },
+  },
+
+  // ── browser_upload ────────────────────────────────────────────────────
+  {
+    name: 'browser_upload',
+    title: 'Browser: Upload Files',
+    description: 'Upload one or more files to a file input element. Paths are local file paths on the machine running agent-browser.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selector: { type: 'string', description: 'CSS selector or snapshot ref for the file input element.' },
+        files: {
+          oneOf: [
+            { type: 'string', description: 'Single file path or comma-separated file paths.' },
+            { type: 'array', items: { type: 'string' }, description: 'Array of local file paths.' },
+          ],
+          description: 'File path(s) to upload.',
+        },
+      },
+      required: ['selector', 'files'],
+    },
+    risk: 'medium',
+    async execute(input) {
+      requireAgentBrowser();
+      const files = Array.isArray(input.files) ? input.files.map(String) : String(input.files).split(',').map(s => s.trim()).filter(Boolean);
+      if (files.length === 0) {
+        return error('At least one file path is required.');
+      }
+      const out = await run(['upload', String(input.selector), ...files]);
+      return { content: [{ type: 'text', text: out || `Uploaded ${files.length} file(s) to "${input.selector}"` }] };
+    },
+  },
+
+  // ── browser_drag ──────────────────────────────────────────────────────
+  {
+    name: 'browser_drag',
+    title: 'Browser: Drag and Drop',
+    description: 'Drag an element and drop it onto another element. Use CSS selectors or snapshot refs for both source and target.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: 'CSS selector or snapshot ref for the element to drag.' },
+        target: { type: 'string', description: 'CSS selector or snapshot ref for the drop target.' },
+      },
+      required: ['source', 'target'],
+    },
+    risk: 'medium',
+    async execute(input) {
+      requireAgentBrowser();
+      const out = await run(['drag', String(input.source), String(input.target)]);
+      return { content: [{ type: 'text', text: out || `Dragged "${input.source}" to "${input.target}"` }] };
     },
   },
 ];
