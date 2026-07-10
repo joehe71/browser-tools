@@ -68,7 +68,7 @@
   "files": [
     "dist/",
     "i18n/",
-    "icon.svg",
+    "icon.png",
     "README.md",
     "README.zh-CN.md"
   ]
