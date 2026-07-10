@@ -74,6 +74,19 @@ A typical browser automation flow:
 6. **`browser_read`** — Extract readable content
 7. **`browser_close`** — Clean up when done
 
+## Visible Browser
+
+To see the agent's browser operations in real time, use `browser_connect`. The agent will:
+
+1. Detect the platform and check if Chrome is installed:
+   - macOS: `/Applications/Google Chrome.app`
+   - Linux: `which google-chrome`
+   - Windows: `where chrome`
+2. Launch Chrome with `--remote-debugging-port=9222`
+3. Call `browser_connect port=9222` to connect
+
+All subsequent operations will happen in the visible browser window.
+
 ## Privacy
 
 The mini tool shells out to the `agent-browser` CLI on your machine. No data leaves your machine beyond what agent-browser itself does when visiting URLs you specify.

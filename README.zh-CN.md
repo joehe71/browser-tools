@@ -74,6 +74,19 @@ agent-browser install   # 首次运行下载 Chrome for Testing
 6. **`browser_read`** — 提取可读内容
 7. **`browser_close`** — 用完后清理
 
+## 可见浏览器
+
+要在真实浏览器窗口中实时查看 agent 的操作，使用 `browser_connect`。agent 会：
+
+1. 检测平台并检查 Chrome 是否已安装：
+   - macOS：`/Applications/Google Chrome.app`
+   - Linux：`which google-chrome`
+   - Windows：`where chrome`
+2. 启动 Chrome 并带上 `--remote-debugging-port=9222`
+3. 调用 `browser_connect port=9222` 连接
+
+后续所有操作都会在可见浏览器窗口中执行。
+
 ## 隐私
 
 该 Mini Tool 通过 shell 调用本机的 `agent-browser` CLI。除了 agent-browser 访问你指定的 URL 时产生的数据外，不会有其他数据离开本机。
