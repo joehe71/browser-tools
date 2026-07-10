@@ -1,0 +1,73 @@
+{
+  "name": "@finch.app/agent-browser",
+  "version": "0.1.0",
+  "description": "Browser automation tools for Finch, powered by agent-browser (Vercel Labs).",
+  "author": {
+    "name": "joehe71"
+  },
+  "homepage": "https://github.com/joehe71/browser-tools",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joehe71/browser-tools.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "finch": {
+    "manifestVersion": 1,
+    "id": "agent-browser",
+    "name": "Agent Browser",
+    "description": "Control a real browser from Finch: navigate, click, fill, screenshot, read page content, and more — powered by agent-browser (Vercel Labs).",
+    "systemPrompt": "When the user needs to interact with a web page, scrape content, take screenshots, fill forms, or automate browser tasks, use the agent-browser tools. Each tool wraps the agent-browser CLI. If agent-browser is not installed, guide the user to install it first with `npm install -g agent-browser && agent-browser install`.",
+    "toolMeta": {
+      "name": "Browser"
+    },
+    "promptGuides": [
+      {
+        "id": "setup-agent-browser",
+        "title": "Set up Agent Browser",
+        "description": "Install agent-browser and download Chrome for browser automation.",
+        "prompt": "/browser_install Install agent-browser CLI and set up Chrome for browser automation."
+      },
+      {
+        "id": "scrape-webpage",
+        "title": "Scrape a webpage",
+        "description": "Navigate to a URL and extract its readable content.",
+        "prompt": "/browser_navigate open https://example.com and /browser_read get the page content"
+      }
+    ],
+    "main": "dist/index.js",
+    "activationEvents": [
+      "onStartup"
+    ],
+    "extensionType": "community",
+    "categories": [
+      "developer",
+      "research"
+    ],
+    "privacyPolicyUrl": "https://finchwork.app/privacy",
+    "termsOfServiceUrl": "https://finchwork.app/terms",
+    "contributes": {
+      "tools": true,
+      "skills": false
+    },
+    "permissions": {
+      "filesystem": "read",
+      "network": false,
+      "shell": true
+    }
+  },
+  "devDependencies": {
+    "@finch.app/minitool-api": "^0.1.13",
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "README.zh-CN.md"
+  ]
+}
