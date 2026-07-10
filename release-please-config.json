@@ -6,6 +6,7 @@
       "changelog-path": "CHANGELOG.md"
     }
   },
+  "include-component-in-tag": false,
   "include-v-in-tag": true,
   "commit-search-depth": 300,
   "release-search-depth": 200,
