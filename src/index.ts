@@ -683,5 +683,9 @@ export function activate(ctx: finch.MiniToolContext): void {
 }
 
 export function deactivate(): void {
-  // chrome-devtools daemon persists independently — no cleanup needed.
+  try {
+    execSync('chrome-devtools stop', { timeout: 5000, stdio: 'pipe' });
+  } catch {
+    // ignore errors if daemon is not running
+  }
 }
