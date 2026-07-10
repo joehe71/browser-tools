@@ -50,6 +50,7 @@ jobs:
           cd /tmp/finch-releases
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/finchtoys/finch-releases.git"
 
           # Check current state
           EXISTING=$(node -p "
