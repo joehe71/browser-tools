@@ -1,5 +1,5 @@
 {
-  "name": "@finch.app/agent-browser",
+  "name": "@joehe71/browser-tools",
   "version": "0.1.0",
   "description": "Browser automation tools for Finch, powered by agent-browser (Vercel Labs).",
   "author": {
