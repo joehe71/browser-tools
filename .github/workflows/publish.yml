@@ -39,6 +39,8 @@ jobs:
           # Clone finch-releases
           gh repo clone finchtoys/finch-releases /tmp/finch-releases -- --depth=1
           cd /tmp/finch-releases
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Check current state
           EXISTING=$(node -p "
