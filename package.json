@@ -67,6 +67,7 @@
   },
   "files": [
     "dist/",
+    "icon.svg",
     "README.md",
     "README.zh-CN.md"
   ]
