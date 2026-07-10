@@ -26,7 +26,7 @@ jobs:
       # Sync extension registry in finch-releases
       - name: Sync to finch-releases
         env:
-          GITHUB_TOKEN: ${{ secrets.FINCH_RELEASES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           PKG_NAME=$(node -p "require('./package.json').name")
