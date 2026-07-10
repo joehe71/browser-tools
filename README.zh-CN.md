@@ -1,4 +1,4 @@
-# Agent Browser · Finch Mini Tool
+# 浏览器工具 · Finch Mini Tool
 
 从 Finch 控制真实浏览器——导航、点击、填写表单、截图、读取页面内容、上传文件、保存 PDF、拖拽等。基于 [agent-browser](https://github.com/vercel-labs/agent-browser)（Vercel Labs）。
 

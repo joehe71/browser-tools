@@ -1,4 +1,4 @@
-# Agent Browser · Finch Mini Tool
+# Browser Tools · Finch Mini Tool
 
 Control a real browser from Finch — navigate, click, fill forms, take screenshots, read page content, and more. Powered by [agent-browser](https://github.com/vercel-labs/agent-browser) (Vercel Labs).
 
