@@ -10,20 +10,78 @@
  */
 import type * as finch from 'finch';
 import { execFile, execSync } from 'node:child_process';
-import { accessSync, constants, readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync } from 'node:fs';
+import { accessSync, chmodSync, constants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
-const CLI = 'agent-browser';
+let _extensionPath = '';
+
+// ── Binary resolution ──────────────────────────────────────────────────────
+
+/** Get the extension's bin directory. */
+function getBinDir(): string {
+  return join(_extensionPath, 'bin');
+}
+
+/** Get the local agent-browser binary path. */
+function getBinPath(): string {
+  const suffix = process.platform === 'win32' ? 'agent-browser.exe' : 'agent-browser';
+  return join(getBinDir(), suffix);
+}
+
+/** Resolve the agent-browser binary: local bin first, then PATH. */
+function getAgentBrowserBinary(): string {
+  const local = getBinPath();
+  if (existsSync(local)) {
+    try {
+      execSync(`"${local}" --version`, { timeout: 5000, stdio: 'pipe' });
+      return local;
+    } catch {
+      // Binary exists but doesn't work — fall through to PATH
+    }
+  }
+  return 'agent-browser';
+}
+
+const PLATFORM_BINARY_MAP: Record<string, string> = {
+  'darwin-arm64': 'agent-browser-darwin-arm64',
+  'darwin-x64': 'agent-browser-darwin-x64',
+  'linux-arm64': 'agent-browser-linux-arm64',
+  'linux-x64': 'agent-browser-linux-x64',
+  'linux-musl-arm64': 'agent-browser-linux-musl-arm64',
+  'linux-musl-x64': 'agent-browser-linux-musl-x64',
+  'win32-x64': 'agent-browser-win32-x64.exe',
+};
+
+/** Get the platform key for the current system. */
+function getPlatformKey(): string {
+  if (process.platform === 'linux') {
+    try {
+      const lddOut = execSync('ldd --version 2>&1 || true', { timeout: 3000, encoding: 'utf-8' });
+      if (lddOut.includes('musl')) {
+        const muslKey = `linux-musl-${process.arch}`;
+        if (PLATFORM_BINARY_MAP[muslKey]) return muslKey;
+      }
+    } catch { /* fall through */ }
+  }
+  return `${process.platform}-${process.arch}`;
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Check if agent-browser is available on PATH. */
+/** Check if agent-browser is available (local bin or PATH). */
 function isAgentBrowserAvailable(): boolean {
+  const local = getBinPath();
+  if (existsSync(local)) {
+    try {
+      execSync(`"${local}" --version`, { stdio: 'ignore', timeout: 3000 });
+      return true;
+    } catch { /* fall through */ }
+  }
   try {
-    execSync(`which ${CLI}`, { stdio: 'ignore', timeout: 3000 });
+    execSync('which agent-browser', { stdio: 'ignore', timeout: 3000 });
     return true;
   } catch {
     return false;
@@ -32,7 +90,8 @@ function isAgentBrowserAvailable(): boolean {
 
 /** Run agent-browser with args and return stdout. */
 async function run(args: string[], timeout = 30_000): Promise<string> {
-  const { stdout, stderr } = await execFileAsync(CLI, args, { timeout, maxBuffer: 10 * 1024 * 1024 });
+  const binary = getAgentBrowserBinary();
+  const { stdout, stderr } = await execFileAsync(binary, args, { timeout, maxBuffer: 10 * 1024 * 1024 });
   if (stderr) {
     // agent-browser may print diagnostics to stderr; append to stdout
     return [stdout.trim(), stderr.trim()].filter(Boolean).join('\n');
@@ -480,7 +539,7 @@ const tools: Array<{
   {
     name: 'browser_check',
     title: 'Browser: Check Status',
-    description: 'Check whether agent-browser CLI is installed and whether Chrome is available. Shows version info and installation status. Call this first if browser tools are not working.',
+    description: 'Check whether agent-browser CLI is installed and whether Chrome is available. Shows version info and installation status. Call this first if browser tools are not working. If agent-browser is not installed, call `browser_setup` to install it automatically.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -495,7 +554,9 @@ const tools: Array<{
             text: [
               '❌ agent-browser is not installed.',
               '',
-              'To install:',
+              'To install automatically, call the `browser_setup` tool.',
+              '',
+              'To install manually:',
               '  1. Install the CLI:  npm install -g agent-browser',
               '  2. Download Chrome:  agent-browser install',
               '',
@@ -515,6 +576,132 @@ const tools: Array<{
         };
       } catch {
         return { content: [{ type: 'text', text: '⚠️ agent-browser is installed but version info could not be retrieved.' }] };
+      }
+    },
+  },
+
+  // ── browser_setup ─────────────────────────────────────────────────────
+  {
+    name: 'browser_setup',
+    title: 'Browser: Setup',
+    description: 'Install the agent-browser CLI and download Chrome for Testing. This is a one-time setup. Supports npm (default, global install), homebrew (system-wide), or curl (downloads binary directly to the extension bin/ directory and does not pollute PATH). Call this if browser_check shows agent-browser is not installed.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        method: {
+          type: 'string',
+          description: 'Installation method.',
+          enum: ['npm', 'homebrew', 'curl'],
+          default: 'npm',
+        },
+      },
+    },
+    risk: 'medium',
+    async execute(input) {
+      if (isAgentBrowserAvailable()) {
+        try {
+          const version = await run(['--version'], 5_000);
+          return {
+            content: [{
+              type: 'text',
+              text: [
+                `✅ agent-browser is already installed.`,
+                `Version: ${version}`,
+                '',
+                'No setup needed — all browser tools are ready to use.',
+              ].join('\n'),
+            }],
+          };
+        } catch {
+          // fall through to install
+        }
+      }
+
+      const method = String(input.method ?? 'npm');
+
+      try {
+        if (method === 'homebrew') {
+          execSync('brew install agent-browser', { timeout: 120_000, stdio: 'pipe' });
+        } else if (method === 'curl') {
+          // Download the npm tarball and extract the native binary to extPath/bin/
+          const tmpDir = mkdtempSync(join(tmpdir(), 'agent-browser-setup-'));
+          try {
+            const tarballPath = join(tmpDir, 'package.tgz');
+            // Download using npm pack (avoids extra deps)
+            execSync(`npm pack agent-browser --pack-destination "${tmpDir}"`, { timeout: 120_000, stdio: 'pipe' });
+            const tgzFiles = readdirSync(tmpDir).filter(f => f.startsWith('agent-browser-') && f.endsWith('.tgz'));
+            if (tgzFiles.length === 0) throw new Error('Failed to download agent-browser tarball');
+            execSync(`tar -xzf "${join(tmpDir, tgzFiles[0])}" -C "${tmpDir}"`, { timeout: 30_000, stdio: 'pipe' });
+
+            const platformKey = getPlatformKey();
+            const binaryName = PLATFORM_BINARY_MAP[platformKey];
+            if (!binaryName) throw new Error(`Unsupported platform: ${platformKey}`);
+
+            const binDir = getBinDir();
+            mkdirSync(binDir, { recursive: true });
+            copyFileSync(join(tmpDir, 'package', 'bin', binaryName), getBinPath());
+            chmodSync(getBinPath(), 0o755);
+          } finally {
+            rmSync(tmpDir, { recursive: true, force: true });
+          }
+        } else {
+          // npm (default)
+          execSync('npm install -g agent-browser', { timeout: 120_000, stdio: 'pipe' });
+        }
+
+        // Download Chrome for Testing (use the just-installed binary)
+        const binary = getAgentBrowserBinary();
+        execSync(`"${binary}" install`, { timeout: 300_000, stdio: 'pipe' });
+
+        const version = await run(['--version'], 5_000);
+        const methodLabel =
+          method === 'npm' ? 'npm global install' :
+          method === 'homebrew' ? 'Homebrew' : 'curl (local bin/)';
+        const successLines = [
+          `✅ agent-browser installed successfully! (${methodLabel})`,
+          `Version: ${version}`,
+        ];
+        if (method === 'curl') {
+          successLines.push(`Location: \`${getBinPath()}\``);
+        }
+        successLines.push(
+          '',
+          'All browser tools are now ready to use.',
+        );
+        return {
+          content: [{
+            type: 'text',
+            text: successLines.join('\n'),
+          }],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{
+            type: 'text',
+            text: [
+              `❌ Failed to install agent-browser: ${message}`,
+              '',
+              '**Manual install alternatives:**',
+              '```bash',
+              '# npm',
+              'npm install -g agent-browser',
+              'agent-browser install',
+              '',
+              '# Homebrew',
+              'brew install agent-browser',
+              'agent-browser install',
+              '',
+              '# Cargo',
+              'cargo install agent-browser',
+              'agent-browser install',
+              '```',
+              '',
+              'After installing, restart Finch or re-enable the extension.',
+            ].join('\n'),
+          }],
+          isError: true,
+        };
       }
     },
   },
@@ -773,6 +960,8 @@ const tools: Array<{
 // ── Activation ──────────────────────────────────────────────────────────────
 
 export function activate(ctx: finch.MiniToolContext): void {
+  _extensionPath = ctx.extension.extensionPath;
+
   for (const tool of tools) {
     ctx.subscriptions.push(
       ctx.tools.register({
@@ -790,13 +979,10 @@ export function activate(ctx: finch.MiniToolContext): void {
                 content: [{
                   type: 'text',
                   text: [
-                    '❌ agent-browser is not installed on this system.',
+                    '❌ agent-browser is not available.',
                     '',
-                    'To get started:',
-                    '  1. npm install -g agent-browser',
-                    '  2. agent-browser install',
-                    '',
-                    'Then ask me to try again. Or use the /browser_check tool to verify installation.',
+                    'Call the `browser_setup` tool to install it automatically,',
+                    'or run `/browser_check` first to check the current status.',
                   ].join('\n'),
                 }],
                 isError: true,
