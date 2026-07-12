@@ -140,8 +140,8 @@ function registerSetupTool(ctx: finch.ExtensionContext): void {
     inputSchema: {
       type: 'object',
       properties: {
-        headless: { type: 'boolean', description: 'Run Chrome in headless mode (no visible window). Default: false.' },
-        viewport: { type: 'string', description: 'Initial viewport size, e.g. "1280x720".' },
+        headless: { type: 'boolean', description: t(ctx, 'field.headless.description') },
+        viewport: { type: 'string', description: t(ctx, 'field.viewport.description') },
       },
     },
     risk: 'medium',
