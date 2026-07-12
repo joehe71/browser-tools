@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.0](https://github.com/joehe71/browser-tools/compare/v0.2.1...v1.0.0) (2026-07-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* Removed all 23 shell exec wrapper tools. Browser automation is now provided by chrome-devtools-mcp MCP server, registered via Finch's mcp.client capability. Tools are exposed as mcp__chrome-devtools__* and discovered by the Agent via ToolSearch with source:"mcp".
+
+### Features
+
+* refactor to MCP tool — register chrome-devtools-mcp via mcp.client ([fa26aeb](https://github.com/joehe71/browser-tools/commit/fa26aeba22168e0d23e90dfa7687281abf9e817d))
+
+
+### Bug Fixes
+
+* i18n for form field descriptions in browser_setup ([ae4ecc0](https://github.com/joehe71/browser-tools/commit/ae4ecc0e6b05bfc5d859f91a8da516c3dca10798))
+* i18n toast message for browser_setup success ([e2f1cd6](https://github.com/joehe71/browser-tools/commit/e2f1cd638914ee4f8781581331fd3f856cdab2e4))
+* remove slash prefix from promptGuides — backtick-wrap tool names instead ([2f03b93](https://github.com/joehe71/browser-tools/commit/2f03b9370d1c515316594b397d7f0254f8ea02d6))
+
 ## [0.2.0](https://github.com/joehe71/browser-tools/compare/v0.1.0...v0.2.0) (2026-07-10)
 
 

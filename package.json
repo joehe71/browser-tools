@@ -1,6 +1,6 @@
 {
   "name": "@joehe71/browser-tools",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Browser automation tools for Finch — powered by Chrome DevTools MCP (Google). Registers chrome-devtools-mcp as an MCP server via Finch MCP Client.",
   "author": {
     "name": "joehe71"
@@ -110,14 +110,24 @@
               "navigate_page": {
                 "inline": {
                   "mode": "join",
-                  "fields": [{ "path": "url", "maxLength": 80 }],
+                  "fields": [
+                    {
+                      "path": "url",
+                      "maxLength": 80
+                    }
+                  ],
                   "template": "{url}"
                 }
               },
               "click": {
                 "inline": {
                   "mode": "join",
-                  "fields": [{ "path": "uid", "maxLength": 30 }],
+                  "fields": [
+                    {
+                      "path": "uid",
+                      "maxLength": 30
+                    }
+                  ],
                   "template": "{uid}"
                 }
               },
@@ -125,8 +135,14 @@
                 "inline": {
                   "mode": "join",
                   "fields": [
-                    { "path": "uid", "maxLength": 30 },
-                    { "path": "value", "maxLength": 40 }
+                    {
+                      "path": "uid",
+                      "maxLength": 30
+                    },
+                    {
+                      "path": "value",
+                      "maxLength": 40
+                    }
                   ],
                   "template": "{uid} → {value}"
                 }
@@ -134,7 +150,13 @@
               "evaluate_script": {
                 "inline": {
                   "mode": "join",
-                  "fields": [{ "path": "expression", "format": "truncate", "maxLength": 60 }],
+                  "fields": [
+                    {
+                      "path": "expression",
+                      "format": "truncate",
+                      "maxLength": 60
+                    }
+                  ],
                   "template": "{expression}"
                 }
               },
