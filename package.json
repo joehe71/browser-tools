@@ -1,7 +1,7 @@
 {
   "name": "@joehe71/browser-tools",
-  "version": "0.2.1",
-  "description": "Browser automation tools for Finch — navigate, click, fill forms, take screenshots, debug, and more. Powered by Chrome DevTools MCP (Google).",
+  "version": "0.3.0",
+  "description": "Browser automation tools for Finch — powered by Chrome DevTools MCP (Google). Registers chrome-devtools-mcp as an MCP server via Finch MCP Client.",
   "author": {
     "name": "joehe71"
   },
@@ -20,8 +20,8 @@
     "manifestVersion": 1,
     "id": "browser-tools",
     "name": "Browser Tools",
-    "description": "Control a real browser: navigate, click, fill forms, take screenshots, debug, and more — powered by Chrome DevTools MCP (Google).",
-    "systemPrompt": "When the user needs to interact with a web page, scrape content, take screenshots, fill forms, debug, or automate browser tasks, use the Browser Tools extension. Each tool wraps the chrome-devtools CLI (Google Chrome DevTools MCP).\n\nSetup: If chrome-devtools-mcp is not installed, call `browser_setup` to install it automatically. This is a one-time setup. If `browser_check` shows it is not available, always suggest calling `browser_setup` first.\n\nElement selection: Chrome DevTools MCP uses UIDs (not CSS selectors) to identify elements. Always call `browser_snapshot` first to get element UIDs, then pass UIDs to `browser_click`, `browser_fill`, `browser_hover`, etc.\n\nWorkflow: Start with `browser_check` to verify the environment. Then `browser_navigate` to open a URL, `browser_snapshot` to get element UIDs, and `browser_click` / `browser_fill` to interact. Use `browser_screenshot` to visually verify state. Use `browser_console` and `browser_network` to debug. Clean up with `browser_close` when done.\n\nVisible browser: Chrome DevTools MCP starts a visible browser window by default. All operations happen in real time in the browser window. No extra configuration needed. When the user asks to 'watch', 'see', or 'visually verify' the automation, this happens automatically.",
+    "description": "Control a real browser via Chrome DevTools MCP — navigate, click, fill forms, take screenshots, debug, and more.",
+    "systemPrompt": "When the user needs to interact with a web page, scrape content, take screenshots, fill forms, debug, or automate browser tasks, use the Browser Tools extension powered by Chrome DevTools MCP.\n\nSetup: If this is the first time, call `browser_setup` to configure the MCP connection. Once configured, the extension registers a chrome-devtools MCP server automatically.\n\nElement selection: Chrome DevTools MCP uses UIDs (not CSS selectors) to identify elements. Always call `take_snapshot` first to get element UIDs, then pass UIDs to `click`, `fill`, `hover`, etc.\n\nWorkflow: Use `browser_setup` if not configured. Then use `ToolSearch` with `source:\"mcp\"` to discover the `mcp__chrome-devtools__*` tools. Call `mcp__chrome-devtools__navigate_page` to open a URL, `mcp__chrome-devtools__take_snapshot` to get element UIDs, and `mcp__chrome-devtools__click` / `mcp__chrome-devtools__fill` to interact. Use `mcp__chrome-devtools__take_screenshot` to visually verify. Use `mcp__chrome-devtools__list_console_messages` and `mcp__chrome-devtools__list_network_requests` to debug. Clean up with `mcp__chrome-devtools__close_page` when done.\n\nVisible browser: Chrome DevTools MCP starts a visible browser window by default. All operations happen in real time in the browser window. No extra configuration needed.",
     "toolMeta": {
       "name": "Browser"
     },
@@ -29,14 +29,14 @@
       {
         "id": "setup",
         "title": "Set up Browser Tools",
-        "description": "Install chrome-devtools-mcp if needed.",
-        "prompt": "Check if chrome-devtools-mcp is installed using `browser_check`. If not installed, call `browser_setup` to install it."
+        "description": "Configure the Chrome DevTools MCP connection.",
+        "prompt": "Set up Browser Tools for Finch."
       },
       {
         "id": "scrape-webpage",
         "title": "Scrape a webpage",
         "description": "Navigate to a URL and extract its readable content.",
-        "prompt": "Use `browser_navigate` to open https://example.com, then `browser_snapshot` to get the page structure, then `browser_read` to extract content."
+        "prompt": "Navigate to https://example.com and extract the page content."
       }
     ],
     "main": "dist/index.js",
@@ -50,9 +50,110 @@
     ],
     "privacyPolicyUrl": "https://finchwork.app/privacy",
     "termsOfServiceUrl": "https://finchwork.app/terms",
+    "requires": {
+      "capabilities": [
+        "mcp.client"
+      ]
+    },
     "contributes": {
       "tools": true,
-      "skills": false
+      "skills": false,
+      "mcpServers": [
+        {
+          "name": "chrome-devtools",
+          "description": "Chrome DevTools MCP server by Google. Provides browser automation, debugging, and performance analysis tools. Call browser_setup to configure.",
+          "toolMeta": {
+            "titles": {
+              "click": "Click",
+              "drag": "Drag",
+              "fill": "Fill",
+              "fill_form": "Fill Form",
+              "handle_dialog": "Handle Dialog",
+              "hover": "Hover",
+              "press_key": "Press Key",
+              "type_text": "Type Text",
+              "upload_file": "Upload File",
+              "click_at": "Click At",
+              "close_page": "Close Page",
+              "list_pages": "List Pages",
+              "navigate_page": "Navigate",
+              "new_page": "New Page",
+              "select_page": "Select Page",
+              "wait_for": "Wait For",
+              "emulate": "Emulate",
+              "resize_page": "Resize Page",
+              "evaluate_script": "Run JavaScript",
+              "get_console_message": "Get Console Message",
+              "list_console_messages": "Console Messages",
+              "lighthouse_audit": "Lighthouse Audit",
+              "take_screenshot": "Screenshot",
+              "take_snapshot": "Snapshot",
+              "screencast_start": "Start Screencast",
+              "screencast_stop": "Stop Screencast",
+              "get_network_request": "Get Network Request",
+              "list_network_requests": "Network Requests",
+              "performance_analyze_insight": "Performance Insight",
+              "performance_start_trace": "Start Trace",
+              "performance_stop_trace": "Stop Trace",
+              "take_heapsnapshot": "Heap Snapshot",
+              "close_heapsnapshot": "Close Heap Snapshot",
+              "compare_heapsnapshots": "Compare Heap Snapshots",
+              "install_extension": "Install Extension",
+              "list_extensions": "List Extensions",
+              "reload_extension": "Reload Extension",
+              "trigger_extension_action": "Trigger Extension Action",
+              "uninstall_extension": "Uninstall Extension"
+            }
+          },
+          "toolDisplay": {
+            "tools": {
+              "navigate_page": {
+                "inline": {
+                  "mode": "join",
+                  "fields": [{ "path": "url", "maxLength": 80 }],
+                  "template": "{url}"
+                }
+              },
+              "click": {
+                "inline": {
+                  "mode": "join",
+                  "fields": [{ "path": "uid", "maxLength": 30 }],
+                  "template": "{uid}"
+                }
+              },
+              "fill": {
+                "inline": {
+                  "mode": "join",
+                  "fields": [
+                    { "path": "uid", "maxLength": 30 },
+                    { "path": "value", "maxLength": 40 }
+                  ],
+                  "template": "{uid} → {value}"
+                }
+              },
+              "evaluate_script": {
+                "inline": {
+                  "mode": "join",
+                  "fields": [{ "path": "expression", "format": "truncate", "maxLength": 60 }],
+                  "template": "{expression}"
+                }
+              },
+              "take_screenshot": {
+                "inline": {
+                  "mode": "literal",
+                  "template": "📸"
+                }
+              },
+              "take_snapshot": {
+                "inline": {
+                  "mode": "literal",
+                  "template": "🌲"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "permissions": {
       "filesystem": "read",
