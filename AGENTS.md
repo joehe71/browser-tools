@@ -4,43 +4,47 @@ Space-bound project rules for the browser-tools Finch Mini Tool extension.
 
 ## Project Overview
 
-- Finch Mini Tool extension wrapping Vercel Labs [`agent-browser`](https://github.com/vercel-labs/agent-browser) CLI.
+- Finch Mini Tool extension that registers [`chrome-devtools-mcp`](https://github.com/niclas-niclas/chrome-devtools-mcp) as an MCP server via Finch's `mcp.client` capability.
 - Published as `@joehe71/browser-tools` on npm.
-- Tech stack: TypeScript (ES2022/ESNext), `@finch.app/minitool-api`, Node `child_process`.
+- Tech stack: TypeScript (ES2022/ESNext), `@finch.app/minitool-api`, MCP Client capability.
+- All browser automation tools are provided by the MCP server (`mcp__chrome-devtools__*`).
+- This extension only handles registration, configuration, and status checking.
+
+## Architecture
+
+- **MCP Server**: `chrome-devtools-mcp` by Google — stdio transport via `npx -y chrome-devtools-mcp@latest`.
+- **Registration**: `activate()` reads stored config from `ctx.storage` and calls `mcp.client.registerServer()`.
+- **Teardown**: `deactivate()` calls `mcp.client.unregisterServer()`.
+- **Tools**: `browser_setup` (configure + register), `browser_check` (status).
+- **Metadata**: `contributes.mcpServers` in `package.json` provides tool titles and display hints for the MCP Client.
 
 ## Workflow
 
-1. **Read before editing.** For upstream CLI changes, check the agent-browser README first.
+1. **Read before editing.** For upstream MCP server changes, check the chrome-devtools-mcp README first.
 2. **Build after edits.** After changing `src/`, run `npm run build` to confirm TypeScript compiles.
 3. **Conventional Commits.** Use `feat:`, `fix:`, `chore:`, `docs:` prefixes so Release Please can generate `CHANGELOG.md`.
 4. **Release flow.** Push to `main` creates a Release PR; merging it creates a `v*` tag and triggers `npm publish`.
 
 ## Code Conventions
 
-- One tool per definition block in `src/index.ts`. Keep the `browser_` name prefix.
-- Each tool must provide: `name`, `title`, `description`, `inputSchema`, `risk`, `execute`.
-- Risk levels:
-  - `low` — read-only or page state queries (`read`, `snapshot`, `get_info`, `wait`)
-  - `medium` — DOM interactions that mutate state (`click`, `fill`, `upload`, `drag`)
-  - `high` — arbitrary code execution (`run_js`)
-- Shell out to `agent-browser` via the shared `run()` / `runJson()` helpers.
-- Guard every tool except `browser_check` with `requireAgentBrowser()`.
-- Return `{ content: [...], isError: true }` on failures; log unexpected exceptions with `ctx.logger.error`.
-- Temp files for screenshots/PDFs must be cleaned up in `finally` blocks.
+- `browser_setup` and `browser_check` are the only local tools. Keep them minimal.
+- MCP tool metadata (titles, display) goes in `package.json` `contributes.mcpServers`, not in code.
+- Secrets should never be stored or returned. Chrome DevTools MCP has no API key, but future options may.
+- Return `{ content: [...], isError: true }` on failures; log with `ctx.logger.error`.
+- Use `registerWhenReady()` pattern for MCP registration — extension activation order is not guaranteed.
 
 ## Adding or Modifying Tools
 
-- Match the upstream `agent-browser` CLI command syntax and argument order.
+- This extension does not add MCP tools directly. To add a local utility tool, register it in `src/index.ts`.
+- To expose new MCP tool metadata, add entries to `contributes.mcpServers[].toolMeta.titles` and `toolDisplay.tools`.
 - Update the README tool table and options sections.
 - Consider whether `package.json` `systemPrompt` or `promptGuides` need updating.
-- Consider whether unit tests are feasible and add them before merging complex logic.
 
 ## Testing
 
 - There is currently no test framework.
 - Minimum gate for any PR: `npm run build` must pass.
-- If adding non-trivial logic, set up a test harness rather than only adding implementation code.
-- Before release, smoke-test with a real `agent-browser` installation when possible.
+- Before release, smoke-test with a real `chrome-devtools-mcp` installation when possible.
 
 ## CI/CD
 
