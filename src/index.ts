@@ -31,6 +31,10 @@ interface McpClientCapability {
 
 let activeCtx: finch.ExtensionContext | null = null;
 
+function t(ctx: finch.ExtensionContext, key: string, values?: Record<string, string | number | boolean>): string {
+  return ctx.i18n?.t ? ctx.i18n.t(key, values) : key;
+}
+
 // ── Storage helpers ─────────────────────────────────────────────────────────
 
 async function readSetup(ctx: finch.ExtensionContext): Promise<StoredSetup | undefined> {
@@ -157,7 +161,7 @@ function registerSetupTool(ctx: finch.ExtensionContext): void {
         return { content: [{ type: 'text', text: `Saved setup, but MCP Client did not accept the server: ${registration.error ?? 'unknown error'}.` }], isError: true };
       }
 
-      await ctx.ui.showToast({ title: 'Browser Tools configured', variant: 'success' });
+      await ctx.ui.showToast({ title: t(ctx, 'toast.setup.success'), variant: 'success' });
       const validation = await verifyWithMcpClient(ctx);
       const summary = buildServerConfig(setup);
       return {

@@ -1,6 +1,8 @@
 {
   "name": "浏览器工具",
   "description": "通过 Chrome DevTools MCP 控制真实浏览器：导航、点击、填写表单、截图、调试等",
+  "toast.setup.success": "浏览器工具已配置",
+  "toast.setup.failed": "配置失败：{error}",
   "systemPrompt": "当用户需要与网页交互、抓取内容、截图、填写表单、调试或自动化浏览器任务时，使用基于 Chrome DevTools MCP 的浏览器工具扩展。\n\n安装：首次使用时，调用 `browser_setup` 配置 MCP 连接。配置完成后，扩展会自动注册 chrome-devtools MCP server。\n\n元素选择：Chrome DevTools MCP 使用 UID（而非 CSS 选择器）来标识元素。始终先调用 `take_snapshot` 获取元素 UID，再将 UID 传给 `click`、`fill`、`hover` 等工具。\n\n工作流：未配置时先用 `browser_setup`。然后用 `ToolSearch`（`source:\"mcp\"`）发现 `mcp__chrome-devtools__*` 工具。用 `mcp__chrome-devtools__navigate_page` 打开 URL，`mcp__chrome-devtools__take_snapshot` 获取元素 UID，`mcp__chrome-devtools__click` / `mcp__chrome-devtools__fill` 进行交互。用 `mcp__chrome-devtools__take_screenshot` 可视化验证。用 `mcp__chrome-devtools__list_console_messages` 和 `mcp__chrome-devtools__list_network_requests` 调试。完成后用 `mcp__chrome-devtools__close_page` 清理。\n\n可见浏览器：Chrome DevTools MCP 默认启动可见浏览器窗口。所有操作都在浏览器窗口中实时执行，无需额外配置。",
   "promptGuides": {
     "setup": {

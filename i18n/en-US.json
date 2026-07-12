@@ -1,6 +1,8 @@
 {
   "name": "Browser Tools",
   "description": "Control a real browser via Chrome DevTools MCP — navigate, click, fill forms, take screenshots, debug, and more",
+  "toast.setup.success": "Browser Tools configured",
+  "toast.setup.failed": "Setup failed: {error}",
   "systemPrompt": "When the user needs to interact with a web page, scrape content, take screenshots, fill forms, debug, or automate browser tasks, use the Browser Tools extension powered by Chrome DevTools MCP.\n\nSetup: If this is the first time, call `browser_setup` to configure the MCP connection. Once configured, the extension registers a chrome-devtools MCP server automatically.\n\nElement selection: Chrome DevTools MCP uses UIDs (not CSS selectors) to identify elements. Always call `take_snapshot` first to get element UIDs, then pass UIDs to `click`, `fill`, `hover`, etc.\n\nWorkflow: Use `browser_setup` if not configured. Then use `ToolSearch` with `source:\"mcp\"` to discover the `mcp__chrome-devtools__*` tools. Call `mcp__chrome-devtools__navigate_page` to open a URL, `mcp__chrome-devtools__take_snapshot` to get element UIDs, and `mcp__chrome-devtools__click` / `mcp__chrome-devtools__fill` to interact. Use `mcp__chrome-devtools__take_screenshot` to visually verify. Use `mcp__chrome-devtools__list_console_messages` and `mcp__chrome-devtools__list_network_requests` to debug. Clean up with `mcp__chrome-devtools__close_page` when done.\n\nVisible browser: Chrome DevTools MCP starts a visible browser window by default. All operations happen in real time in the browser window. No extra configuration needed.",
   "promptGuides": {
     "setup": {
