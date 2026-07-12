@@ -30,13 +30,13 @@
         "id": "setup",
         "title": "Set up Browser Tools",
         "description": "Install chrome-devtools-mcp if needed.",
-        "prompt": "Check if chrome-devtools-mcp is installed using /browser_check. If not installed, call /browser_setup to install it."
+        "prompt": "Check if chrome-devtools-mcp is installed using `browser_check`. If not installed, call `browser_setup` to install it."
       },
       {
         "id": "scrape-webpage",
         "title": "Scrape a webpage",
         "description": "Navigate to a URL and extract its readable content.",
-        "prompt": "/browser_navigate to https://example.com, then /browser_snapshot to get the page structure, then /browser_read to extract content."
+        "prompt": "Use `browser_navigate` to open https://example.com, then `browser_snapshot` to get the page structure, then `browser_read` to extract content."
       }
     ],
     "main": "dist/index.js",

@@ -6,12 +6,12 @@
     "setup": {
       "title": "安装浏览器工具",
       "description": "检查并安装 chrome-devtools-mcp。",
-      "prompt": "先用 /browser_check 检查 chrome-devtools-mcp 是否已安装。如果没有安装，调用 /browser_setup 安装。"
+      "prompt": "先用 `browser_check` 检查 chrome-devtools-mcp 是否已安装。如果没有安装，调用 `browser_setup` 安装。"
     },
     "scrape-webpage": {
       "title": "抓取网页内容",
       "description": "打开指定 URL 并提取可读内容。",
-      "prompt": "用 /browser_navigate 打开 https://example.com，然后用 /browser_snapshot 获取页面结构，再用 /browser_read 提取内容。"
+      "prompt": "用 `browser_navigate` 打开 https://example.com，然后用 `browser_snapshot` 获取页面结构，再用 `browser_read` 提取内容。"
     }
   }
 }
