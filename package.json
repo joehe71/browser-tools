@@ -1,6 +1,6 @@
 {
   "name": "@joehe71/browser-tools",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser automation tools for Finch — powered by Chrome DevTools MCP (Google). Registers chrome-devtools-mcp as an MCP server via Finch MCP Client.",
   "author": {
     "name": "joehe71"
@@ -14,7 +14,8 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
   },
   "finch": {
     "manifestVersion": 1,
