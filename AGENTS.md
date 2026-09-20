@@ -12,7 +12,8 @@ Space-bound project rules for the browser-tools Finch Mini Tool extension.
 
 ## Architecture
 
-- **MCP Server**: `chrome-devtools-mcp` by Google — stdio transport via `npx -y chrome-devtools-mcp@latest`.
+- **MCP Server**: `chrome-devtools-mcp` by Google — stdio transport via `npx -y chrome-devtools-mcp@<pinned>` (see `MCP_PACKAGE_SPEC` in `src/index.ts`). The version is pinned rather than `@latest` so npx doesn't make a registry round-trip on every spawn.
+- **npx warm-up**: `registerRuntimeServer` runs a cheap `npx ... --version` before the first MCP register of a session. The MCP Client connect timeout is ~20s; on a cold cache npx's package fetch alone can blow past it. Best-effort: failures are logged but never block registration.
 - **Registration**: `activate()` reads stored config from `ctx.storage` and calls `mcp.client.registerServer()`.
 - **Teardown**: `deactivate()` calls `mcp.client.unregisterServer()`.
 - **Tools**: `browser_setup` (configure + register), `browser_check` (status).

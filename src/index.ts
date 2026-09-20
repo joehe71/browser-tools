@@ -10,6 +10,12 @@ import type * as finch from 'finch';
 
 const SERVER_NAME = 'chrome-devtools';
 const STORAGE_KEY = 'browser-tools.setup';
+/**
+ * Pinned chrome-devtools-mcp version. Using a fixed version instead of
+ * `@latest` avoids a registry round-trip on every spawn and protects against
+ * upstream breaking changes. Bump deliberately after checking the changelog.
+ */
+const MCP_PACKAGE_SPEC = 'chrome-devtools-mcp@1.9.0';
 
 interface StoredSetup {
   headless: boolean;
@@ -54,7 +60,7 @@ interface McpStdioServerConfig {
 }
 
 function buildServerConfig(setup?: StoredSetup): McpStdioServerConfig {
-  const args = ['-y', 'chrome-devtools-mcp@latest'];
+  const args = ['-y', MCP_PACKAGE_SPEC];
   if (setup?.headless) args.push('--headless');
   if (setup?.viewport) args.push('--viewport', setup.viewport);
   if (setup?.extraArgs) args.push(...setup.extraArgs);
@@ -67,10 +73,43 @@ function buildServerConfig(setup?: StoredSetup): McpStdioServerConfig {
   };
 }
 
-async function registerRuntimeServer(ctx: finch.ExtensionContext, setup?: StoredSetup): Promise<{ ok: boolean; error?: string }> {
+/**
+ * Warm the npx cache before the MCP bridge tries to spawn the server.
+ *
+ * The MCP Client connect timeout is ~20s. On a cold cache,
+ * `npx -y chrome-devtools-mcp@x.y.z` can take much longer than that (package
+ * download + install), so the very first connect attempt times out even though
+ * nothing is wrong with the server itself. Running a cheap `npx ... --version`
+ * here pre-populates the npx cache so the real spawn is fast.
+ *
+ * Failures are logged but never block registration — the package may already
+ * be cached, or the network hiccup may resolve before the actual connect.
+ */
+async function warmNpxCache(ctx: finch.ExtensionContext): Promise<void> {
+  const WARM_TIMEOUT_MS = 60_000;
+  try {
+    const { execFile } = await import('node:child_process');
+    await new Promise<void>((resolve) => {
+      const child = execFile('npx', ['-y', MCP_PACKAGE_SPEC, '--version'], { timeout: WARM_TIMEOUT_MS }, (err) => {
+        if (err) ctx.logger.warn(`npx warm-up finished with error (continuing anyway): ${err.message}`);
+        else ctx.logger.info('npx warm-up done; chrome-devtools-mcp is cached');
+        resolve();
+      });
+      // Don't let a hung spawn keep the extension host alive on deactivate.
+      child.unref?.();
+    });
+  } catch (err) {
+    // child_process unavailable (non-Node host) — registration can still work
+    // if the package is already in the npx cache.
+    ctx.logger.warn(`npx warm-up unavailable (continuing anyway): ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+async function registerRuntimeServer(ctx: finch.ExtensionContext, setup?: StoredSetup, opts?: { warm?: boolean }): Promise<{ ok: boolean; error?: string }> {
   if (!ctx.capabilities.has('mcp.client')) {
     return { ok: false, error: 'mcp.client capability unavailable' };
   }
+  if (opts?.warm !== false) await warmNpxCache(ctx);
   const mcp = ctx.capabilities.get<McpClientCapability>('mcp.client');
   const server = buildServerConfig(setup);
   server.ownerExtensionId = ctx.extension.id;
@@ -95,9 +134,11 @@ async function unregisterRuntimeServer(ctx: finch.ExtensionContext): Promise<voi
 async function registerWhenReady(ctx: finch.ExtensionContext, setup?: StoredSetup): Promise<void> {
   const MAX_ATTEMPTS = 20;
   const INTERVAL_MS = 250;
+  let warmed = false;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (ctx.capabilities.has('mcp.client')) {
-      const res = await registerRuntimeServer(ctx, setup);
+      const res = await registerRuntimeServer(ctx, setup, { warm: !warmed });
+      warmed = true;
       if (res.ok) {
         ctx.logger.info('chrome-devtools MCP server registered');
         return;
