@@ -1,6 +1,6 @@
 {
   "name": "@joehe71/browser-tools",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Browser automation tools for Finch — powered by Chrome DevTools MCP (Google). Registers chrome-devtools-mcp as an MCP server via Finch MCP Client.",
   "author": {
     "name": "joehe71"
